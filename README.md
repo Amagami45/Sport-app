@@ -2,7 +2,7 @@ Features
 - Dynamic Activity Dashboard
 Toggle between Day / Week / Month views with smooth transitions.
 - Bar Charts for Activity Metrics
-Visualize calories, steps, and heart rate using custom, lightweight chart components.
+Visualize calories and steps using custom, lightweight chart components.
 Beautifully styled cards showing workouts, durations, and progress.
 - Modern UI 
 Clean typography, soft gradients, and intuitive layout.
