@@ -1,47 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import {View, Text, TouchableOpacity, Stylesheet} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Location from "expo-location";
-import {saveActivity, getTotals} from "./ActivityStore"
+import { saveActivity, getTotals } from "./ActivityStore";
 
 const kcalPerKm = {
-    Running: 60,
-    Walking: 40,
-    Cycling: 30,
+  Running: 60,
+  Walking: 40,
+  Cycling: 30,
 };
 
-//main
-export default function StartActivity({onFinish}) {
-    const units = "km";
-    const defaultType = "Running"
+export default function StartActivity({ onFinish }) {
+  const units = "km";
+  const defaultType = "Running";
 
-    const [type, setType] = useState(defaultType);
-    const [tracking, setTracking] = useState(false);
-    const [coords, setCoords] = useState([]);
-    const [distance, setDistance] = useState(0);
-    const [startTime, setStartTime] = useState(null);
-    const [elapsed, setElapsed] = useState(0);
-    const [region, setRegion] = useState(null);
+  const [type, setType] = useState(defaultType);
+  const [tracking, setTracking] = useState(false);
+  const [coords, setCoords] = useState([]);
+  const [distance, setDistance] = useState(0);
+  const [startTime, setStartTime] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
 
-    const [totals,setTotals] = useState({
-        Running:0,
-        Walking:0,
-        Cycling:0,
-    });
+  const [totals, setTotals] = useState({
+    Running: 0,
+    Walking: 0,
+    Cycling: 0,
+  });
 
-    const formatDistance = (km) =>{
-        units === "mi" ? km / 1.60934 : km;
-    };
+  const formatDistance = (km) => {
+    return units === "mi" ? km / 1.60934 : km;
+  };
 
-    const loadTotals = () => {
-        setTotals(getTotals());
-    };
+  useEffect(() => {
+    setTotals(getTotals());
+  }, []);
 
-    useEffect(() => {
-        setTotals(getTotals());
-    }, []);
-
-
-    const startTracking = async () => {
+  const startTracking = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       alert("GPS permission denied");
@@ -51,7 +44,6 @@ export default function StartActivity({onFinish}) {
     setCoords([]);
     setDistance(0);
     setElapsed(0);
-    setRegion(null);
 
     setTracking(true);
     setStartTime(Date.now());
@@ -79,7 +71,7 @@ export default function StartActivity({onFinish}) {
     };
 
     saveActivity(activity);
-    loadTotals();
+    setTotals(getTotals());
 
     setTracking(false);
     onFinish(activity);
@@ -93,19 +85,11 @@ export default function StartActivity({onFinish}) {
         { accuracy: Location.Accuracy.Highest, distanceInterval: 5 },
         (loc) => {
           setCoords((prev) => {
-            if (prev.length === 0) {
-              setRegion({
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-              });
-            }
-
             if (prev.length > 0) {
               const last = prev[prev.length - 1];
               const dist = getDistance(last, loc.coords);
               setDistance((d) => d + dist);
             }
-
             return [...prev, loc.coords];
           });
         }
@@ -151,8 +135,6 @@ export default function StartActivity({onFinish}) {
 
       {!tracking && (
         <>
-          <Text style={styles.label}>Choose sport:</Text>
-
           <View style={styles.row}>
             {["Running", "Walking", "Cycling"].map((t) => (
               <TouchableOpacity
@@ -175,15 +157,12 @@ export default function StartActivity({onFinish}) {
             ))}
           </View>
 
-          <View style={styles.totalBox}>
-            <Text style={styles.totalLabel}>Total {type} distance:</Text>
-            <Text style={styles.totalValue}>
-              {formatDistance(totals[type]).toFixed(2)} {units}
-            </Text>
-          </View>
+          <Text style={styles.totalValue}>
+            {formatDistance(totals[type]).toFixed(2)} {units}
+          </Text>
 
           <TouchableOpacity style={styles.startBtn} onPress={startTracking}>
-            <Text style={styles.startText}>Start Tracking</Text>
+            <Text style={styles.startText}>Start</Text>
           </TouchableOpacity>
         </>
       )}
@@ -195,12 +174,6 @@ export default function StartActivity({onFinish}) {
           </Text>
           <Text style={styles.stat}>Time: {formatTime(elapsed)}</Text>
 
-          <View style={styles.mapPlaceholder}>
-            <Text style={{ color: "#aaa" }}>
-              Map preview not available in Snack
-            </Text>
-          </View>
-
           <TouchableOpacity style={styles.stopBtn} onPress={stopTracking}>
             <Text style={styles.stopText}>Stop</Text>
           </TouchableOpacity>
@@ -210,70 +183,74 @@ export default function StartActivity({onFinish}) {
   );
 }
 
-//Styles
-const styles=Stylesheet.create({
-    continer:{
-        flex:1,
-        backgroundColor:"#18191D",
-        padding: 20,
-    },
-    header:{
-        fontSize:26,
-        color:"white",
-        textAlign:"center",
-        marginBottom:20,
-    },
-    label:{
-        color:"#aaa",
-        marginBottom:10,
-    },
-    row:{
-        flexDirection: "row",
-        justifyContent: "space-between",
-    },
-    typeButton:{
-        flex:1,
-        padding:12,
-        backgroundColor:"#2E3035",
-        borderRadius:10,
-        maginHorizontal:4,
-    },
-    typeButtonActive:{
-        backgroundColor:"#9EE26A",
-    },
-    typeText:{
-        color:"white",
-        textAlign:"center",
-    },
-    typeTextActive:{
-        color:"#0B1307",
-        fontWeight:"700",
-    },
-    startBtn:{
-        marginTop:30,
-        backgroundColor:"#9EE26A",
-        padding:16,
-        borderRadius:12,
-    },
-    startText:{
-        color:"0B1307",
-        textAlign:"center",
-        fontSize:"700",
-    },
-    stat:{
-        color:"white",
-        fontSize:18,
-        marginTop:20,
-    },
-    stopBtn:{
-        marginTop:40,
-        backgroundColor:"#FF5252",
-        padding:16,
-        borderRadius:12,
-    },
-    stopText:{
-        color:"white",
-        textAlign:"center",
-        fontWeight:"700",
-    },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#18191D",
+    padding: 20,
+  },
+  header: {
+    fontSize: 26,
+    color: "white",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  typeButton: {
+    flex: 1,
+    padding: 12,
+    backgroundColor: "#2E3035",
+    borderRadius: 10,
+    marginHorizontal: 4,
+  },
+  typeButtonActive: {
+    backgroundColor: "#9EE26A",
+  },
+  typeText: {
+    color: "white",
+    textAlign: "center",
+  },
+  typeTextActive: {
+    color: "#0B1307",
+    fontWeight: "700",
+  },
+  totalValue: {
+    color: "white",
+    textAlign: "center",
+    marginTop: 20,
+    fontSize: 20,
+  },
+  startBtn: {
+    marginTop: 30,
+    backgroundColor: "#9EE26A",
+    padding: 16,
+    borderRadius: 12,
+  },
+  startText: {
+    color: "#0B1307",
+    textAlign: "center",
+    fontWeight: "700",
+    fontSize: 18,
+  },
+  stat: {
+    color: "white",
+    fontSize: 20,
+    marginTop: 20,
+    textAlign: "center",
+  },
+  stopBtn: {
+    marginTop: 40,
+    backgroundColor: "#FF5252",
+    padding: 16,
+    borderRadius: 12,
+  },
+  stopText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "700",
+    fontSize: 18,
+  },
 });

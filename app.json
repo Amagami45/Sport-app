@@ -1,12 +1,11 @@
 {
   "expo": {
-    "name": "authentic-indigo-tea",
-    "slug": "snack-1dbadee8-f1a3-4b0a-8bf8-9a41e1e08fcd",
+    "name": "Sportapp",
+    "slug": "sportapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -16,14 +15,31 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.allinapp.sportapp",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "sdkVersion": "51.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "89b8c294-f072-4b40-b587-4169ce020f42"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "owner": "hckclub"
   }
 }

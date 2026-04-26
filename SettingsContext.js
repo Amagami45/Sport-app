@@ -34,52 +34,19 @@ export const SettingsProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    AsyncStorage.setItem("units", units);
-  }, [units]);
-
-  useEffect(() => {
-    AsyncStorage.setItem("defaultType", defaultType);
-  }, [defaultType]);
-
-  useEffect(() => {
-    AsyncStorage.setItem("gpsEnabled", String(gpsEnabled));
-  }, [gpsEnabled]);
-
-  useEffect(() => {
-    AsyncStorage.setItem("weight", String(weight));
-  }, [weight]);
-
-  useEffect(() => {
-    AsyncStorage.setItem("ftp", String(ftp));
-  }, [ftp]);
-
-  useEffect(() => {
-    const convertWeight = async () => {
+    const saveData = async () => {
       try {
-        const storedWeight = await AsyncStorage.getItem("weight");
-        if (!storedWeight) return;
-
-        const w = Number(storedWeight);
-
-        if (units === "mi" && w < 200) {
-          const lbs = Math.round(w * 2.20462);
-          setWeight(lbs);
-          await AsyncStorage.setItem("weight", String(lbs));
-        }
-
-        if (units === "km" && w > 200) {
-          const kg = Math.round(w * 0.453592);
-          setWeight(kg);
-          await AsyncStorage.setItem("weight", String(kg));
-        }
-
+        await AsyncStorage.setItem("units", units);
+        await AsyncStorage.setItem("defaultType", defaultType);
+        await AsyncStorage.setItem("gpsEnabled", String(gpsEnabled));
+        await AsyncStorage.setItem("weight", String(weight));
+        await AsyncStorage.setItem("ftp", String(ftp));
       } catch (e) {
-        console.log("Error converting weight", e);
+        console.log("Error uploading to internal storage:", e);
       }
     };
-
-    convertWeight();
-  }, [units]);
+    saveData();
+  }, [units, defaultType, gpsEnabled, weight, ftp]);
 
   const resetSettings = async () => {
     try {
@@ -95,7 +62,7 @@ export const SettingsProvider = ({ children }) => {
       setDefaultType("Running");
       setGpsEnabled(true);
       setWeight(70);
-      setFtp(250); 
+      setFtp(250);
 
     } catch (e) {
       console.log("Error resetting settings", e);
@@ -113,8 +80,8 @@ export const SettingsProvider = ({ children }) => {
         setGpsEnabled,
         weight,
         setWeight,
-        ftp,        
-        setFtp,     
+        ftp,
+        setFtp,
         resetSettings,
       }}
     >
@@ -124,3 +91,4 @@ export const SettingsProvider = ({ children }) => {
 };
 
 export const useSettings = () => useContext(SettingsContext);
+export default SettingsContext;

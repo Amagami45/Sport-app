@@ -7,7 +7,7 @@ export default function RaiChart({ data }) {
 
     const width = 300;
     const height = 120;
-    const maxRai = Math.min(...data.map((d) => d.rai), 1);
+    const maxRai = Math.max(...data.map((d) => d.rai), 1);
 
     const points = data.map((d, i) =>{
         const x = (i/(data.length - 1)) * width;
@@ -32,7 +32,7 @@ export default function RaiChart({ data }) {
                 {points.map((p, i) => {
                     const [x,y] = p.split(",").map(Number);
                     return(
-                        <Circle key={i} cx={x} cy={y} r="3" fill="9EE26A"/>
+                        <Circle key={i} cx={x} cy={y} r="3" fill="#9EE26A"/>
                     );
                 })}
             </Svg>

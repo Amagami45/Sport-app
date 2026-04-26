@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { loadActivities } from "./ActivityStore";
 
 const theme = {
   colors: {
@@ -13,7 +14,9 @@ const theme = {
   },
 };
 
-export default function ActivityHistory({ activities }) {
+export default function ActivityHistory() {
+  const [activities, setActivities] = useState([]);
+
   const getIcon = (type) => {
     switch (type) {
       case "Running":
@@ -26,6 +29,14 @@ export default function ActivityHistory({ activities }) {
         return "run";
     }
   };
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await loadActivities();
+      setActivities(data.reverse());
+    };
+    load();
+  }, []);
 
   return (
     <View style={styles.container}>

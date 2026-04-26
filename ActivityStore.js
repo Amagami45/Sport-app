@@ -1,111 +1,85 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-let activities = [];
+export let activities = [];
 
-// Load activities
+// Load activities (SINGLE SOURCE OF TRUTH)
 export const loadActivities = async () => {
   try {
     const saved = await AsyncStorage.getItem("activities");
     activities = saved ? JSON.parse(saved) : [];
+    return activities;
   } catch (e) {
     console.log("Error loading activities:", e);
+    return [];
   }
-  return activities;
 };
 
-// -----------------------------
-// 🔥 TSS CALCULATIONS
-// -----------------------------
-
-// RUNNING TSS (tempo-based)
+// RUNNING TSS
 export const calculateRunTSS = (durationMin, distanceKm, thresholdPaceSec) => {
   if (!durationMin || !distanceKm || !thresholdPaceSec) return 0;
 
   const paceSec = (durationMin * 60) / distanceKm;
   const IF = thresholdPaceSec / paceSec;
 
-  const tss = durationMin * IF * IF;
-  return Math.round(tss);
+  return Math.round(durationMin * IF * IF);
 };
 
-// WALKING TSS (simple intensity model)
+// WALKING TSS
 export const calculateWalkTSS = (durationMin, distanceKm) => {
   if (!durationMin || !distanceKm) return 0;
 
-  const speed = distanceKm / (durationMin / 60); // km/h
+  const speed = distanceKm / (durationMin / 60);
 
   let IF = 0.3;
   if (speed > 5) IF = 0.4;
   if (speed > 6) IF = 0.5;
 
-  const tss = durationMin * IF;
-  return Math.round(tss);
+  return Math.round(durationMin * IF);
 };
 
-// CYCLING TSS (speed-based, bez wattmetru)
+// CYCLING TSS
 export const calculateBikeTSS = (durationMin, distanceKm) => {
   if (!durationMin || !distanceKm) return 0;
 
-  const speed = distanceKm / (durationMin / 60); // km/h
+  const speed = distanceKm / (durationMin / 60);
 
   let IF = 0.5;
   if (speed > 20) IF = 0.7;
   if (speed > 25) IF = 0.9;
   if (speed > 30) IF = 1.1;
 
-  const tss = durationMin * IF * IF;
-  return Math.round(tss);
+  return Math.round(durationMin * IF * IF);
 };
 
-// -----------------------------
-// 🔥 RUNNING POWER (realistic model)
-// -----------------------------
+// RUNNING POWER
 export const calculateRunningPower = (durationMin, distanceKm, weightKg = 70) => {
   if (!durationMin || !distanceKm) return 0;
 
   const timeSec = durationMin * 60;
   const distanceM = distanceKm * 1000;
+  const v = distanceM / timeSec;
 
-  const v = distanceM / timeSec; // m/s
-
-  // Realistický model podle Garmin/Stryd
-  const power = weightKg * (1.04 + 0.29 * v * v);
-
-  return Math.round(power);
+  return Math.round(weightKg * (1.04 + 0.29 * v * v));
 };
 
 // AUTO SELECT TSS
 export const calculateTSS = (activity, ftp, thresholdPaceSec = 300) => {
   const { type, duration, distanceKm } = activity;
 
-  if (type === "Running") {
-    return calculateRunTSS(duration, distanceKm, thresholdPaceSec);
-  }
-
-  if (type === "Walking") {
-    return calculateWalkTSS(duration, distanceKm);
-  }
-
-  if (type === "Cycling") {
-    return calculateBikeTSS(duration, distanceKm);
-  }
+  if (type === "Running") return calculateRunTSS(duration, distanceKm, thresholdPaceSec);
+  if (type === "Walking") return calculateWalkTSS(duration, distanceKm);
+  if (type === "Cycling") return calculateBikeTSS(duration, distanceKm);
 
   return 0;
 };
 
-// -----------------------------
-// 🔥 SAVE ACTIVITY (WITH TSS + RUNNING POWER)
-// -----------------------------
+// SAVE ACTIVITY
 export const saveActivity = async (activity, ftp, thresholdPaceSec = 300) => {
   const tss = calculateTSS(activity, ftp, thresholdPaceSec);
 
   const runningPower =
     activity.type === "Running"
-      ? calculateRunningPower(
-          activity.duration,
-          activity.distanceKm,
-          activity.weight || 70
-        )
+      ? calculateRunningPower(activity.duration, activity.distanceKm, activity.weight || 70)
       : 0;
 
   activities.push({
@@ -121,7 +95,7 @@ export const saveActivity = async (activity, ftp, thresholdPaceSec = 300) => {
   }
 };
 
-// Clear all activities
+// CLEAR ALL
 export const clearActivities = async () => {
   try {
     activities = [];
@@ -131,28 +105,20 @@ export const clearActivities = async () => {
   }
 };
 
-// Totals by type
+// TOTALS
 export const getTotals = () => {
-  const totals = {
-    Running: 0,
-    Walking: 0,
-    Cycling: 0,
-  };
+  const totals = { Running: 0, Walking: 0, Cycling: 0 };
 
   activities.forEach((a) => {
-    if (totals[a.type] !== undefined) {
-      totals[a.type] += a.distanceKm || 0;
-    }
+    if (totals[a.type] !== undefined) totals[a.type] += a.distanceKm || 0;
   });
 
   return totals;
 };
 
-// -----------------------------
-// 🔥 Running Ability Index (RAI)
-// -----------------------------
+// RAI (single value)
 export const getRunningAbilityIndex = (daysWindow = 30) => {
-  if (!activities || activities.length === 0) return 0;
+  if (!activities.length) return 0;
 
   const now = new Date();
   const fromDate = new Date(now);
@@ -164,18 +130,17 @@ export const getRunningAbilityIndex = (daysWindow = 30) => {
     return d >= fromDate && d <= now;
   });
 
-  if (runs.length === 0) return 0;
+  if (!runs.length) return 0;
 
   let totalSeconds = 0;
   let totalKm = 0;
 
   runs.forEach((r) => {
-    if (!r.duration || !r.distanceKm) return;
     totalSeconds += r.duration * 60;
     totalKm += r.distanceKm;
   });
 
-  if (totalKm === 0 || totalSeconds === 0) return 0;
+  if (!totalKm || !totalSeconds) return 0;
 
   const paceSecPerKm = totalSeconds / totalKm;
   const rai = 1000 / paceSecPerKm;
@@ -183,7 +148,7 @@ export const getRunningAbilityIndex = (daysWindow = 30) => {
   return Math.round(rai * 100) / 100;
 };
 
-// RAI HISTORY (last 30 days)
+// RAI HISTORY (30 days)
 export const getRaiHistory = (days = 30) => {
   const history = [];
   const now = new Date();
@@ -198,7 +163,7 @@ export const getRaiHistory = (days = 30) => {
       (a) => a.type === "Running" && a.date && a.date.startsWith(dayStr)
     );
 
-    if (runs.length === 0) {
+    if (!runs.length) {
       history.unshift({ date: dayStr, rai: 0 });
       continue;
     }
@@ -223,24 +188,31 @@ export const getRaiHistory = (days = 30) => {
   return history;
 };
 
-// -----------------------------
-// 🔥 DAILY TSS (SUM OF ALL ACTIVITIES TODAY)
-// -----------------------------
+// TODAY TSS
 export const getTodayTSS = () => {
   const today = new Date().toISOString().split("T")[0];
 
   let total = 0;
 
   activities.forEach((a) => {
-    if (!a.date) return;
-    if (a.date.startsWith(today)) {
-      total += a.tss || 0;
-    }
+    if (a.date?.startsWith(today)) total += a.tss || 0;
   });
 
   return Math.round(total);
 };
 
-// Get all activities
-export const getActivities = () => activities;
+// TODAY ACTIVE MINUTES
+export const getTodayActiveMinutes = () => {
+  const today = new Date().toISOString().split("T")[0];
 
+  let total = 0;
+
+  activities.forEach((a) => {
+    if (a.date?.startsWith(today)) total += a.duration || 0;
+  });
+
+  return total;
+};
+
+// GET ALL
+export const getActivities = () => activities;

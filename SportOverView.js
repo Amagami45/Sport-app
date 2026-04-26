@@ -202,6 +202,7 @@ export default function SportOverview() {
   const [steps, setSteps] = useState(0);
   const [kcal, setKcal] = useState(0);
   const [activeMinutes, setActiveMinutes] = useState(0);
+  const [activities, setActivities] = useState([]);
 
   const [viewMode, setViewMode] = useState("today");
 
@@ -218,7 +219,6 @@ export default function SportOverview() {
   const [showTssInfo, setShowTssInfo] = useState(false);
   const [showTssChart, setShowTssChart] = useState(false);
   const [tssHistory, setTssHistory] = useState([]);
-
 
   const [metricItems, setMetricItems] = useState([
     {
@@ -303,6 +303,15 @@ export default function SportOverview() {
   }, [steps]);
 
   useEffect(() => {
+  const load = async () => {
+    const data = await loadActivities();
+    setActivities(data);
+  };
+  load();
+}, [showRunningPowerChart]);
+
+
+  useEffect(() => {
     const burned = Math.round(steps * (0.0005 * weight));
     setKcal(burned);
   }, [steps, weight]);
@@ -376,11 +385,12 @@ export default function SportOverview() {
 
     const hist = activities
       .filter(a => a.tss != null)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
       .slice(-30)
       .map(a => ({
-        date: a.date,
+        date: a.date.split("T")[0],
         tss: a.tss,
-      }));
+    }));
 
     setTssHistory(hist);
   };
@@ -770,28 +780,43 @@ export default function SportOverview() {
   </View>
 </Modal>
 
-      <Modal visible={showRunningPowerChart} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <ScrollView>
+<Modal visible={showRunningPowerChart} transparent animationType="slide">
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalBox}>
+      <ScrollView>
 
-              <RunningPowerChart
-                data={raiHistory.map((d) => ({
-                  date: d.date,
-                  runningPower: 0,
-                }))}
-              />
-            </ScrollView>
+        {activities.length === 0 && (
+          <Text style={{ color: "white", textAlign: "center", marginTop: 20 }}>
+            Loading...
+          </Text>
+        )}
 
-            <TouchableOpacity
-              onPress={() => setShowRunningPowerChart(false)}
-              style={styles.closeButton}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        {activities.length > 0 && (
+          <RunningPowerChart
+            data={activities
+              .filter(a => a.type === "Running")
+              .sort((a, b) => new Date(a.date) - new Date(b.date))
+              .slice(-30)
+              .map(a => ({
+                date: a.date.split("T")[0],
+                runningPower: a.runningPower || 0,
+              }))
+            }
+          />
+        )}
+
+      </ScrollView>
+
+      <TouchableOpacity
+        onPress={() => setShowRunningPowerChart(false)}
+        style={styles.closeButton}
+      >
+        <Text style={styles.closeButtonText}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
     </SafeAreaView>
   );
 }

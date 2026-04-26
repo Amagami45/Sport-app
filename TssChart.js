@@ -11,7 +11,7 @@ export default function TSSChart({ data }){
     const maxTss = Math.max(...data.map((d) => d.tss), 1);
 
     const points = data.map((d, i) => {
-        const x = (i / (data.lenght - 1)) * width;
+        const x = (i / (data.length - 1)) * width;
         const y = height - (d.tss / maxTss) * height;
         return `${x},${y}`;
     });
